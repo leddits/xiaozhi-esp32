@@ -8,14 +8,14 @@
 #include "display/lcd_display.h"
 #define TAG "OttoEmojiDisplay"
 
-// 表情映射表 - 将原版21种表情映射到现有6个GIF
+// 표정 매핑 테이블 - 원본 21개 표정을 현재 6개 GIF로 매핑
 const OttoEmojiDisplay::EmotionMap OttoEmojiDisplay::emotion_maps_[] = {
-    // 中性/平静类表情 -> staticstate
+    // 중성/평온 표정 -> staticstate
     {"neutral", &staticstate},
     {"relaxed", &staticstate},
     {"sleepy", &staticstate},
 
-    // 积极/开心类表情 -> happy
+    // 긍정/행복 표정 -> happy
     {"happy", &happy},
     {"laughing", &happy},
     {"funny", &happy},
@@ -27,23 +27,23 @@ const OttoEmojiDisplay::EmotionMap OttoEmojiDisplay::emotion_maps_[] = {
     {"kissy", &happy},
     {"silly", &happy},
 
-    // 悲伤类表情 -> sad
+    // 슬픔 표정 -> sad
     {"sad", &sad},
     {"crying", &sad},
 
-    // 愤怒类表情 -> anger
+    // 분노 표정 -> anger
     {"angry", &anger},
 
-    // 惊讶类表情 -> scare
+    // 놀람 표정 -> scare
     {"surprised", &scare},
     {"shocked", &scare},
 
-    // 思考/困惑类表情 -> buxue
+    // 사고/혼란 표정 -> buxue
     {"thinking", &buxue},
     {"confused", &buxue},
     {"embarrassed", &buxue},
 
-    {nullptr, nullptr}  // 结束标记
+    {nullptr, nullptr}  // 종료 마커
 };
 
 OttoEmojiDisplay::OttoEmojiDisplay(esp_lcd_panel_io_handle_t panel_io, esp_lcd_panel_handle_t panel,
@@ -118,13 +118,13 @@ void OttoEmojiDisplay::SetEmotion(const char* emotion) {
     for (const auto& map : emotion_maps_) {
         if (map.name && strcmp(map.name, emotion) == 0) {
             lv_gif_set_src(emotion_gif_, map.gif);
-            ESP_LOGI(TAG, "设置表情: %s", emotion);
+            ESP_LOGI(TAG, "표정 설정: %s", emotion);
             return;
         }
     }
 
     lv_gif_set_src(emotion_gif_, &staticstate);
-    ESP_LOGI(TAG, "未知表情'%s'，使用默认", emotion);
+    ESP_LOGI(TAG, "알 수 없는 표정 '%s', 기본값 사용", emotion);
 }
 
 void OttoEmojiDisplay::SetChatMessage(const char* role, const char* content) {
@@ -141,5 +141,5 @@ void OttoEmojiDisplay::SetChatMessage(const char* role, const char* content) {
     lv_label_set_text(chat_message_label_, content);
     lv_obj_clear_flag(chat_message_label_, LV_OBJ_FLAG_HIDDEN);
 
-    ESP_LOGI(TAG, "设置聊天消息 [%s]: %s", role, content);
+    ESP_LOGI(TAG, "채팅 메시지 설정 [%s]: %s", role, content);
 }

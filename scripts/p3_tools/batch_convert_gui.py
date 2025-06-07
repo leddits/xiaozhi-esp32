@@ -9,17 +9,17 @@ from convert_p3_to_audio import decode_p3_to_audio
 class AudioConverterApp:
     def __init__(self, master):
         self.master = master
-        master.title("音频/P3 批量转换工具")
-        master.geometry("680x600")  # 调整窗口高度
+        master.title("오디오/P3 일괄 변환 도구")
+        master.geometry("680x600")  # 창 높이 조정
 
-        # 初始化变量
+        # 변수 초기화
         self.mode = tk.StringVar(value="audio_to_p3")
         self.output_dir = tk.StringVar()
         self.output_dir.set(os.path.abspath("output"))
         self.enable_loudnorm = tk.BooleanVar(value=True)
         self.target_lufs = tk.DoubleVar(value=-16.0)
 
-        # 创建UI组件
+        # UI 구성 요소 생성
         self.create_widgets()
         self.redirect_output()
 

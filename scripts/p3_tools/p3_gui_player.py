@@ -11,12 +11,12 @@ import os
 
 def play_p3_file(input_file, stop_event=None, pause_event=None):
     """
-    播放p3格式的音频文件
-    p3格式: [1字节类型, 1字节保留, 2字节长度, Opus数据]
+    P3 형식의 오디오 파일 재생
+    P3 형식: [1바이트 타입, 1바이트 예약, 2바이트 길이, Opus 데이터]
     """
-    # 初始化Opus解码器
-    sample_rate = 16000  # 采样率固定为16000Hz
-    channels = 1  # 单声道
+    # Opus 디코더 초기화
+    sample_rate = 16000  # 샘플링 레이트는 16000Hz로 고정
+    channels = 1  # 모노
     decoder = opuslib.Decoder(sample_rate, channels)
     
     # 帧大小 (60ms)
