@@ -24,22 +24,22 @@ class AudioConverterApp:
         self.redirect_output()
 
     def create_widgets(self):
-        # 模式选择
-        mode_frame = ttk.LabelFrame(self.master, text="转换模式")
+        # 모드 선택
+        mode_frame = ttk.LabelFrame(self.master, text="변환 모드")
         mode_frame.grid(row=0, column=0, padx=10, pady=5, sticky="ew")
         
-        ttk.Radiobutton(mode_frame, text="音频转P3", variable=self.mode,
+        ttk.Radiobutton(mode_frame, text="오디오→P3", variable=self.mode,
                         value="audio_to_p3", command=self.toggle_settings,
                         width=12).grid(row=0, column=0, padx=5)
-        ttk.Radiobutton(mode_frame, text="P3转音频", variable=self.mode,
+        ttk.Radiobutton(mode_frame, text="P3→오디오", variable=self.mode,
                         value="p3_to_audio", command=self.toggle_settings,
                         width=12).grid(row=0, column=1, padx=5)
 
-        # 响度设置
+        # 음량 설정
         self.loudnorm_frame = ttk.Frame(self.master)
         self.loudnorm_frame.grid(row=1, column=0, padx=10, pady=5, sticky="ew")
         
-        ttk.Checkbutton(self.loudnorm_frame, text="启用响度调整", 
+        ttk.Checkbutton(self.loudnorm_frame, text="음량 조정 활성화", 
                        variable=self.enable_loudnorm, width=15
                        ).grid(row=0, column=0, padx=2)
         ttk.Entry(self.loudnorm_frame, textvariable=self.target_lufs, 

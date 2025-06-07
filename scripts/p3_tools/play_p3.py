@@ -15,10 +15,10 @@ def play_p3_file(input_file):
     channels = 1  # 모노
     decoder = opuslib.Decoder(sample_rate, channels)
     
-    # 帧大小 (60ms)
+    # 프레임 크기 (60ms)
     frame_size = int(sample_rate * 60 / 1000)
     
-    # 打开音频流
+    # 오디오 스트림 열기
     stream = sd.OutputStream(
         samplerate=sample_rate,
         channels=channels,
@@ -28,15 +28,15 @@ def play_p3_file(input_file):
     
     try:
         with open(input_file, 'rb') as f:
-            print(f"正在播放: {input_file}")
+            print(f"재생 중: {input_file}")
             
             while True:
-                # 读取头部 (4字节)
+                # 헤더 읽기 (4바이트)
                 header = f.read(4)
                 if not header or len(header) < 4:
                     break
                 
-                # 解析头部
+                # 헤더 파싱
                 packet_type, reserved, data_len = struct.unpack('>BBH', header)
                 
                 # 读取Opus数据

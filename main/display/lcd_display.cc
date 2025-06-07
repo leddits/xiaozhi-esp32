@@ -796,16 +796,15 @@ void LcdDisplay::SetPreviewImage(const lv_img_dsc_t* img_dsc) {
     
     if (img_dsc != nullptr) {
         // zoom factor 0.5
-        lv_image_set_scale(preview_image_, 128 * width_ / img_dsc->header.w);
-        // 设置图片源并显示预览图片
+        lv_image_set_scale(preview_image_, 128 * width_ / img_dsc->header.w);        // 이미지 소스 설정 및 미리보기 이미지 표시
         lv_image_set_src(preview_image_, img_dsc);
         lv_obj_clear_flag(preview_image_, LV_OBJ_FLAG_HIDDEN);
-        // 隐藏emotion_label_
+        // emotion_label_ 숨기기
         if (emotion_label_ != nullptr) {
             lv_obj_add_flag(emotion_label_, LV_OBJ_FLAG_HIDDEN);
         }
     } else {
-        // 隐藏预览图片并显示emotion_label_
+        // 미리보기 이미지 숨기고 emotion_label_ 표시
         lv_obj_add_flag(preview_image_, LV_OBJ_FLAG_HIDDEN);
         if (emotion_label_ != nullptr) {
             lv_obj_clear_flag(emotion_label_, LV_OBJ_FLAG_HIDDEN);
@@ -844,7 +843,7 @@ void LcdDisplay::SetEmotion(const char* emotion) {
         {"🙄", "confused"}
     };
     
-    // 查找匹配的表情
+    // 일치하는 표정 찾기
     std::string_view emotion_view(emotion);
     auto it = std::find_if(emotions.begin(), emotions.end(),
         [&emotion_view](const Emotion& e) { return e.text == emotion_view; });
@@ -854,16 +853,15 @@ void LcdDisplay::SetEmotion(const char* emotion) {
         return;
     }
 
-    // 如果找到匹配的表情就显示对应图标，否则显示默认的neutral表情
+    // 일치하는 표정을 찾으면 해당 아이콘을 표시하고, 그렇지 않으면 기본 neutral 표정을 표시
     lv_obj_set_style_text_font(emotion_label_, fonts_.emoji_font, 0);
     if (it != emotions.end()) {
-        lv_label_set_text(emotion_label_, it->icon);
-    } else {
+        lv_label_set_text(emotion_label_, it->icon);    } else {
         lv_label_set_text(emotion_label_, "😶");
     }
 
 #if !CONFIG_USE_WECHAT_MESSAGE_STYLE
-    // 显示emotion_label_，隐藏preview_image_
+    // emotion_label_ 표시, preview_image_ 숨김
     lv_obj_clear_flag(emotion_label_, LV_OBJ_FLAG_HIDDEN);
     if (preview_image_ != nullptr) {
         lv_obj_add_flag(preview_image_, LV_OBJ_FLAG_HIDDEN);
@@ -875,12 +873,11 @@ void LcdDisplay::SetIcon(const char* icon) {
     DisplayLockGuard lock(this);
     if (emotion_label_ == nullptr) {
         return;
-    }
-    lv_obj_set_style_text_font(emotion_label_, &font_awesome_30_4, 0);
+    }    lv_obj_set_style_text_font(emotion_label_, &font_awesome_30_4, 0);
     lv_label_set_text(emotion_label_, icon);
 
 #if !CONFIG_USE_WECHAT_MESSAGE_STYLE
-    // 显示emotion_label_，隐藏preview_image_
+    // emotion_label_ 표시, preview_image_ 숨김
     lv_obj_clear_flag(emotion_label_, LV_OBJ_FLAG_HIDDEN);
     if (preview_image_ != nullptr) {
         lv_obj_add_flag(preview_image_, LV_OBJ_FLAG_HIDDEN);
@@ -955,11 +952,11 @@ void LcdDisplay::SetTheme(const std::string& theme_name) {
             
             lv_obj_t* bubble = nullptr;
             
-            // 检查这个对象是容器还是气泡
-            // 如果是容器（用户或系统消息），则获取其子对象作为气泡
-            // 如果是气泡（助手消息），则直接使用
+            // 이 객체가 컨테이너인지 말풍선인지 확인
+            // 컨테이너인 경우(사용자 또는 시스템 메시지), 자식 객체를 말풍선으로 가져옴
+            // 말풍선인 경우(어시스턴트 메시지), 직접 사용
             if (lv_obj_get_child_cnt(obj) > 0) {
-                // 可能是容器，检查它是否为用户或系统消息容器
+                // 컨테이너일 수 있음, 사용자 또는 시스템 메시지 컨테이너인지 확인
                 // 用户和系统消息容器是透明的
                 lv_opa_t bg_opa = lv_obj_get_style_bg_opa(obj, 0);
                 if (bg_opa == LV_OPA_TRANSP) {
