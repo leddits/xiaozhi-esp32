@@ -6,27 +6,32 @@
 #include "otto_emoji_gif.h"
 
 /**
- * @brief Otto 로봇 GIF 표정 디스플레이 클래스
- * LcdDisplay를 상속하여 GIF 표정 지원 추가
+ * @brief Otto机器人GIF表情显示类
+ * 继承LcdDisplay，添加GIF表情支持
  */
 class OttoEmojiDisplay : public SpiLcdDisplay {
-public:    /**
-     * @brief 생성자, SpiLcdDisplay와 동일한 매개변수
+public:
+    /**
+     * @brief 构造函数，参数与SpiLcdDisplay相同
      */
     OttoEmojiDisplay(esp_lcd_panel_io_handle_t panel_io, esp_lcd_panel_handle_t panel, int width,
                      int height, int offset_x, int offset_y, bool mirror_x, bool mirror_y,
                      bool swap_xy, DisplayFonts fonts);
 
-    virtual ~OttoEmojiDisplay() = default;    // 표정 설정 메서드 오버라이드
+    virtual ~OttoEmojiDisplay() = default;
+
+    // 重写表情设置方法
     virtual void SetEmotion(const char* emotion) override;
 
-    // 채팅 메시지 설정 메서드 오버라이드
+    // 重写聊天消息设置方法
     virtual void SetChatMessage(const char* role, const char* content) override;
 
 private:
-    void SetupGifContainer();    lv_obj_t* emotion_gif_;  ///< GIF 표정 컴포넌트
+    void SetupGifContainer();
 
-    // 표정 매핑
+    lv_obj_t* emotion_gif_;  ///< GIF表情组件
+
+    // 表情映射
     struct EmotionMap {
         const char* name;
         const lv_img_dsc_t* gif;

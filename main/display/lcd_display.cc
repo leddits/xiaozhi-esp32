@@ -148,7 +148,7 @@ SpiLcdDisplay::SpiLcdDisplay(esp_lcd_panel_io_handle_t panel_io, esp_lcd_panel_h
     SetupUI();
 }
 
-// RGB LCD 구현
+// RGB LCD实现
 RgbLcdDisplay::RgbLcdDisplay(esp_lcd_panel_io_handle_t panel_io, esp_lcd_panel_handle_t panel,
                            int width, int height, int offset_x, int offset_y,
                            bool mirror_x, bool mirror_y, bool swap_xy,
@@ -270,7 +270,7 @@ MipiLcdDisplay::MipiLcdDisplay(esp_lcd_panel_io_handle_t panel_io, esp_lcd_panel
 }
 
 LcdDisplay::~LcdDisplay() {
-    // 그 다음 LVGL 객체 정리
+    // 然后再清理 LVGL 对象
     if (content_ != nullptr) {
         lv_obj_del(content_);
     }
@@ -358,14 +358,17 @@ void LcdDisplay::SetupUI() {
     lv_obj_set_style_pad_left(status_bar_, 10, 0);
     lv_obj_set_style_pad_right(status_bar_, 10, 0);
     lv_obj_set_style_pad_top(status_bar_, 2, 0);
-    lv_obj_set_style_pad_bottom(status_bar_, 2, 0);    lv_obj_set_scrollbar_mode(status_bar_, LV_SCROLLBAR_MODE_OFF);
-    // 상태바 내용을 세로 중앙 정렬로 설정
-    lv_obj_set_flex_align(status_bar_, LV_FLEX_ALIGN_SPACE_BETWEEN, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);    // emotion_label_을 상태바 최왼쪽에 생성
+    lv_obj_set_style_pad_bottom(status_bar_, 2, 0);
+    lv_obj_set_scrollbar_mode(status_bar_, LV_SCROLLBAR_MODE_OFF);
+    // 设置状态栏的内容垂直居中
+    lv_obj_set_flex_align(status_bar_, LV_FLEX_ALIGN_SPACE_BETWEEN, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+
+    // 创建emotion_label_在状态栏最左侧
     emotion_label_ = lv_label_create(status_bar_);
     lv_obj_set_style_text_font(emotion_label_, &font_awesome_30_4, 0);
     lv_obj_set_style_text_color(emotion_label_, current_theme_.text, 0);
     lv_label_set_text(emotion_label_, FONT_AWESOME_AI_CHIP);
-    lv_obj_set_style_margin_right(emotion_label_, 5, 0); // 우측 여백 추가, 뒤쪽 요소와 분리
+    lv_obj_set_style_margin_right(emotion_label_, 5, 0); // 添加右边距，与后面的元素分隔
 
     notification_label_ = lv_label_create(status_bar_);
     lv_obj_set_flex_grow(notification_label_, 1);
@@ -387,15 +390,16 @@ void LcdDisplay::SetupUI() {
     lv_obj_set_style_text_color(mute_label_, current_theme_.text, 0);
 
     network_label_ = lv_label_create(status_bar_);
-    lv_label_set_text(network_label_, "");    lv_obj_set_style_text_font(network_label_, fonts_.icon_font, 0);
+    lv_label_set_text(network_label_, "");
+    lv_obj_set_style_text_font(network_label_, fonts_.icon_font, 0);
     lv_obj_set_style_text_color(network_label_, current_theme_.text, 0);
-    lv_obj_set_style_margin_left(network_label_, 5, 0); // 좌측 여백 추가, 앞쪽 요소와 분리
+    lv_obj_set_style_margin_left(network_label_, 5, 0); // 添加左边距，与前面的元素分隔
 
     battery_label_ = lv_label_create(status_bar_);
     lv_label_set_text(battery_label_, "");
     lv_obj_set_style_text_font(battery_label_, fonts_.icon_font, 0);
     lv_obj_set_style_text_color(battery_label_, current_theme_.text, 0);
-    lv_obj_set_style_margin_left(battery_label_, 5, 0); // 좌측 여백 추가, 앞쪽 요소와 분리
+    lv_obj_set_style_margin_left(battery_label_, 5, 0); // 添加左边距，与前面的元素分隔
 
     low_battery_popup_ = lv_obj_create(screen);
     lv_obj_set_scrollbar_mode(low_battery_popup_, LV_SCROLLBAR_MODE_OFF);
@@ -418,14 +422,15 @@ void LcdDisplay::SetChatMessage(const char* role, const char* content) {
     DisplayLockGuard lock(this);
     if (content_ == nullptr) {
         return;
-    }    
-    // 빈 메시지 박스가 나타나는 것을 방지
+    }
+    
+    //避免出现空的消息框
     if(strlen(content) == 0) return;
     
-    // 메시지 수량이 제한을 초과하는지 확인
+    // 检查消息数量是否超过限制
     uint32_t child_count = lv_obj_get_child_cnt(content_);
     if (child_count >= MAX_MESSAGES) {
-        // 가장 오래된 메시지 삭제 (첫 번째 자식 객체)
+        // 删除最早的消息（第一个子对象）
         lv_obj_t* first_child = lv_obj_get_child(content_, 0);
         lv_obj_t* last_child = lv_obj_get_child(content_, child_count - 1);
         if (first_child != nullptr) {
@@ -437,17 +442,18 @@ void LcdDisplay::SetChatMessage(const char* role, const char* content) {
         }
     }
     
-    // 시스템 메시지 접기 (시스템 메시지인 경우, 마지막 메시지도 시스템 메시지인지 확인)
-    if (strcmp(role, "system") == 0 && child_count > 0) {        // 마지막 메시지 컨테이너 가져오기
+    // 折叠系统消息（如果是系统消息，检查最后一个消息是否也是系统消息）
+    if (strcmp(role, "system") == 0 && child_count > 0) {
+        // 获取最后一个消息容器
         lv_obj_t* last_container = lv_obj_get_child(content_, child_count - 1);
         if (last_container != nullptr && lv_obj_get_child_cnt(last_container) > 0) {
-            // 컨테이너 내의 말풍선 가져오기
+            // 获取容器内的气泡
             lv_obj_t* last_bubble = lv_obj_get_child(last_container, 0);
             if (last_bubble != nullptr) {
-                // 말풍선 타입이 시스템 메시지인지 확인
+                // 检查气泡类型是否为系统消息
                 void* bubble_type_ptr = lv_obj_get_user_data(last_bubble);
                 if (bubble_type_ptr != nullptr && strcmp((const char*)bubble_type_ptr, "system") == 0) {
-                    // 마지막 메시지도 시스템 메시지인 경우 삭제
+                    // 如果最后一个消息也是系统消息，则删除它
                     lv_obj_del(last_container);
                 }
             }
@@ -462,31 +468,36 @@ void LcdDisplay::SetChatMessage(const char* role, const char* content) {
     lv_obj_set_style_border_color(msg_bubble, current_theme_.border, 0);
     lv_obj_set_style_pad_all(msg_bubble, 8, 0);
 
-    // Create the message text    lv_obj_t* msg_text = lv_label_create(msg_bubble);
+    // Create the message text
+    lv_obj_t* msg_text = lv_label_create(msg_bubble);
     lv_label_set_text(msg_text, content);
     
-    // 텍스트 실제 너비 계산
+    // 计算文本实际宽度
     lv_coord_t text_width = lv_txt_get_width(content, strlen(content), fonts_.text_font, 0);
 
-    // 말풍선 너비 계산
-    lv_coord_t max_width = LV_HOR_RES * 85 / 100 - 16;  // 화면 너비의 85%
+    // 计算气泡宽度
+    lv_coord_t max_width = LV_HOR_RES * 85 / 100 - 16;  // 屏幕宽度的85%
     lv_coord_t min_width = 20;  
     lv_coord_t bubble_width;
     
-    // 텍스트 너비가 최소 너비보다 작지 않도록 보장
+    // 确保文本宽度不小于最小宽度
     if (text_width < min_width) {
         text_width = min_width;
-    }    // 텍스트 너비가 최대 너비보다 작으면 텍스트 너비 사용
+    }
+
+    // 如果文本宽度小于最大宽度，使用文本宽度
     if (text_width < max_width) {
         bubble_width = text_width; 
     } else {
         bubble_width = max_width;
     }
     
-    // 메시지 텍스트의 너비 설정
-    lv_obj_set_width(msg_text, bubble_width);  // 감소 패딩
+    // 设置消息文本的宽度
+    lv_obj_set_width(msg_text, bubble_width);  // 减去padding
     lv_label_set_long_mode(msg_text, LV_LABEL_LONG_WRAP);
-    lv_obj_set_style_text_font(msg_text, fonts_.text_font, 0);    // 말풍선 너비 설정
+    lv_obj_set_style_text_font(msg_text, fonts_.text_font, 0);
+
+    // 设置气泡宽度
     lv_obj_set_width(msg_bubble, bubble_width);
     lv_obj_set_height(msg_bubble, LV_SIZE_CONTENT);
 
@@ -497,7 +508,7 @@ void LcdDisplay::SetChatMessage(const char* role, const char* content) {
         // Set text color for contrast
         lv_obj_set_style_text_color(msg_text, current_theme_.text, 0);
         
-        // 말풍선 유형을 표시하는 사용자 정의 속성 설정
+        // 设置自定义属性标记气泡类型
         lv_obj_set_user_data(msg_bubble, (void*)"user");
         
         // Set appropriate width for content
@@ -508,10 +519,11 @@ void LcdDisplay::SetChatMessage(const char* role, const char* content) {
         lv_obj_set_style_flex_grow(msg_bubble, 0, 0);
     } else if (strcmp(role, "assistant") == 0) {
         // Assistant messages are left-aligned with white background
-        lv_obj_set_style_bg_color(msg_bubble, current_theme_.assistant_bubble, 0);        // Set text color for contrast
+        lv_obj_set_style_bg_color(msg_bubble, current_theme_.assistant_bubble, 0);
+        // Set text color for contrast
         lv_obj_set_style_text_color(msg_text, current_theme_.text, 0);
         
-        // 말풍선 유형을 표시하는 사용자 정의 속성 설정
+        // 设置自定义属性标记气泡类型
         lv_obj_set_user_data(msg_bubble, (void*)"assistant");
         
         // Set appropriate width for content
@@ -522,10 +534,11 @@ void LcdDisplay::SetChatMessage(const char* role, const char* content) {
         lv_obj_set_style_flex_grow(msg_bubble, 0, 0);
     } else if (strcmp(role, "system") == 0) {
         // System messages are center-aligned with light gray background
-        lv_obj_set_style_bg_color(msg_bubble, current_theme_.system_bubble, 0);        // Set text color for contrast
+        lv_obj_set_style_bg_color(msg_bubble, current_theme_.system_bubble, 0);
+        // Set text color for contrast
         lv_obj_set_style_text_color(msg_text, current_theme_.system_text, 0);
         
-        // 말풍선 유형을 표시하는 사용자 정의 속성 설정
+        // 设置自定义属性标记气泡类型
         lv_obj_set_user_data(msg_bubble, (void*)"system");
         
         // Set appropriate width for content
@@ -555,23 +568,25 @@ void LcdDisplay::SetChatMessage(const char* role, const char* content) {
         lv_obj_align(msg_bubble, LV_ALIGN_RIGHT_MID, -25, 0);
         
         // Auto-scroll to this container
-        lv_obj_scroll_to_view_recursive(container, LV_ANIM_ON);    } else if (strcmp(role, "system") == 0) {
-        // 시스템 메시지의 중앙 정렬을 보장하기 위해 전체 너비 컨테이너 생성
+        lv_obj_scroll_to_view_recursive(container, LV_ANIM_ON);
+    } else if (strcmp(role, "system") == 0) {
+        // 为系统消息创建全宽容器以确保居中对齐
         lv_obj_t* container = lv_obj_create(content_);
         lv_obj_set_width(container, LV_HOR_RES);
         lv_obj_set_height(container, LV_SIZE_CONTENT);
         
-        // 컨테이너를 투명하고 테두리 없게 만들기
-        lv_obj_set_style_bg_opa(container, LV_OPA_TRANSP, 0);        lv_obj_set_style_border_width(container, 0, 0);
+        // 使容器透明且无边框
+        lv_obj_set_style_bg_opa(container, LV_OPA_TRANSP, 0);
+        lv_obj_set_style_border_width(container, 0, 0);
         lv_obj_set_style_pad_all(container, 0, 0);
         
-        // 메시지 말풍선을 이 컨테이너로 이동
+        // 将消息气泡移入此容器
         lv_obj_set_parent(msg_bubble, container);
         
-        // 컨테이너에서 말풍선을 중앙 정렬
+        // 将气泡居中对齐在容器中
         lv_obj_align(msg_bubble, LV_ALIGN_CENTER, 0, 0);
         
-        // 자동 스크롤을 하단으로
+        // 自动滚动底部
         lv_obj_scroll_to_view_recursive(container, LV_ANIM_ON);
     } else {
         // For assistant messages
@@ -603,7 +618,8 @@ void LcdDisplay::SetPreviewImage(const lv_img_dsc_t* img_dsc) {
         
         // Set image bubble background color (similar to system message)
         lv_obj_set_style_bg_color(img_bubble, current_theme_.assistant_bubble, 0);
-          // 말풍선 유형을 표시하는 사용자 정의 속성 설정
+        
+        // 设置自定义属性标记气泡类型
         lv_obj_set_user_data(img_bubble, (void*)"image");
         
         // Create the image object inside the bubble
@@ -720,8 +736,10 @@ void LcdDisplay::SetupUI() {
     lv_obj_set_flex_grow(content_, 1);
     lv_obj_set_style_pad_all(content_, 5, 0);
     lv_obj_set_style_bg_color(content_, current_theme_.chat_background, 0);
-    lv_obj_set_style_border_color(content_, current_theme_.border, 0); // Border color for content    lv_obj_set_flex_flow(content_, LV_FLEX_FLOW_COLUMN); // 수직 레이아웃 (위에서 아래로)
-    lv_obj_set_flex_align(content_, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_SPACE_EVENLY); // 자식 객체 중앙 정렬, 등간격 분포
+    lv_obj_set_style_border_color(content_, current_theme_.border, 0); // Border color for content
+
+    lv_obj_set_flex_flow(content_, LV_FLEX_FLOW_COLUMN); // 垂直布局（从上到下）
+    lv_obj_set_flex_align(content_, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_SPACE_EVENLY); // 子对象居中对齐，等距分布
 
     emotion_label_ = lv_label_create(content_);
     lv_obj_set_style_text_font(emotion_label_, &font_awesome_30_4, 0);
@@ -733,10 +751,11 @@ void LcdDisplay::SetupUI() {
     lv_obj_align(preview_image_, LV_ALIGN_CENTER, 0, 0);
     lv_obj_add_flag(preview_image_, LV_OBJ_FLAG_HIDDEN);
 
-    chat_message_label_ = lv_label_create(content_);    lv_label_set_text(chat_message_label_, "");
-    lv_obj_set_width(chat_message_label_, LV_HOR_RES * 0.9); // 너비를 화면 너비의 90%로 제한
-    lv_label_set_long_mode(chat_message_label_, LV_LABEL_LONG_WRAP); // 자동 줄바꿈 모드로 설정
-    lv_obj_set_style_text_align(chat_message_label_, LV_TEXT_ALIGN_CENTER, 0); // 텍스트 중앙 정렬 설정
+    chat_message_label_ = lv_label_create(content_);
+    lv_label_set_text(chat_message_label_, "");
+    lv_obj_set_width(chat_message_label_, LV_HOR_RES * 0.9); // 限制宽度为屏幕宽度的 90%
+    lv_label_set_long_mode(chat_message_label_, LV_LABEL_LONG_WRAP); // 设置为自动换行模式
+    lv_obj_set_style_text_align(chat_message_label_, LV_TEXT_ALIGN_CENTER, 0); // 设置文本居中对齐
     lv_obj_set_style_text_color(chat_message_label_, current_theme_.text, 0);
 
     /* Status bar */
@@ -796,15 +815,16 @@ void LcdDisplay::SetPreviewImage(const lv_img_dsc_t* img_dsc) {
     
     if (img_dsc != nullptr) {
         // zoom factor 0.5
-        lv_image_set_scale(preview_image_, 128 * width_ / img_dsc->header.w);        // 이미지 소스 설정 및 미리보기 이미지 표시
+        lv_image_set_scale(preview_image_, 128 * width_ / img_dsc->header.w);
+        // 设置图片源并显示预览图片
         lv_image_set_src(preview_image_, img_dsc);
         lv_obj_clear_flag(preview_image_, LV_OBJ_FLAG_HIDDEN);
-        // emotion_label_ 숨기기
+        // 隐藏emotion_label_
         if (emotion_label_ != nullptr) {
             lv_obj_add_flag(emotion_label_, LV_OBJ_FLAG_HIDDEN);
         }
     } else {
-        // 미리보기 이미지 숨기고 emotion_label_ 표시
+        // 隐藏预览图片并显示emotion_label_
         lv_obj_add_flag(preview_image_, LV_OBJ_FLAG_HIDDEN);
         if (emotion_label_ != nullptr) {
             lv_obj_clear_flag(emotion_label_, LV_OBJ_FLAG_HIDDEN);
@@ -843,7 +863,7 @@ void LcdDisplay::SetEmotion(const char* emotion) {
         {"🙄", "confused"}
     };
     
-    // 일치하는 표정 찾기
+    // 查找匹配的表情
     std::string_view emotion_view(emotion);
     auto it = std::find_if(emotions.begin(), emotions.end(),
         [&emotion_view](const Emotion& e) { return e.text == emotion_view; });
@@ -853,15 +873,16 @@ void LcdDisplay::SetEmotion(const char* emotion) {
         return;
     }
 
-    // 일치하는 표정을 찾으면 해당 아이콘을 표시하고, 그렇지 않으면 기본 neutral 표정을 표시
+    // 如果找到匹配的表情就显示对应图标，否则显示默认的neutral表情
     lv_obj_set_style_text_font(emotion_label_, fonts_.emoji_font, 0);
     if (it != emotions.end()) {
-        lv_label_set_text(emotion_label_, it->icon);    } else {
+        lv_label_set_text(emotion_label_, it->icon);
+    } else {
         lv_label_set_text(emotion_label_, "😶");
     }
 
 #if !CONFIG_USE_WECHAT_MESSAGE_STYLE
-    // emotion_label_ 표시, preview_image_ 숨김
+    // 显示emotion_label_，隐藏preview_image_
     lv_obj_clear_flag(emotion_label_, LV_OBJ_FLAG_HIDDEN);
     if (preview_image_ != nullptr) {
         lv_obj_add_flag(preview_image_, LV_OBJ_FLAG_HIDDEN);
@@ -873,11 +894,12 @@ void LcdDisplay::SetIcon(const char* icon) {
     DisplayLockGuard lock(this);
     if (emotion_label_ == nullptr) {
         return;
-    }    lv_obj_set_style_text_font(emotion_label_, &font_awesome_30_4, 0);
+    }
+    lv_obj_set_style_text_font(emotion_label_, &font_awesome_30_4, 0);
     lv_label_set_text(emotion_label_, icon);
 
 #if !CONFIG_USE_WECHAT_MESSAGE_STYLE
-    // emotion_label_ 표시, preview_image_ 숨김
+    // 显示emotion_label_，隐藏preview_image_
     lv_obj_clear_flag(emotion_label_, LV_OBJ_FLAG_HIDDEN);
     if (preview_image_ != nullptr) {
         lv_obj_add_flag(preview_image_, LV_OBJ_FLAG_HIDDEN);
@@ -952,11 +974,11 @@ void LcdDisplay::SetTheme(const std::string& theme_name) {
             
             lv_obj_t* bubble = nullptr;
             
-            // 이 객체가 컨테이너인지 말풍선인지 확인
-            // 컨테이너인 경우(사용자 또는 시스템 메시지), 자식 객체를 말풍선으로 가져옴
-            // 말풍선인 경우(어시스턴트 메시지), 직접 사용
+            // 检查这个对象是容器还是气泡
+            // 如果是容器（用户或系统消息），则获取其子对象作为气泡
+            // 如果是气泡（助手消息），则直接使用
             if (lv_obj_get_child_cnt(obj) > 0) {
-                // 컨테이너일 수 있음, 사용자 또는 시스템 메시지 컨테이너인지 확인
+                // 可能是容器，检查它是否为用户或系统消息容器
                 // 用户和系统消息容器是透明的
                 lv_opa_t bg_opa = lv_obj_get_style_bg_opa(obj, 0);
                 if (bg_opa == LV_OPA_TRANSP) {

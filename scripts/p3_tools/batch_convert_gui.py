@@ -9,37 +9,37 @@ from convert_p3_to_audio import decode_p3_to_audio
 class AudioConverterApp:
     def __init__(self, master):
         self.master = master
-        master.title("오디오/P3 일괄 변환 도구")
-        master.geometry("680x600")  # 창 높이 조정
+        master.title("音频/P3 批量转换工具")
+        master.geometry("680x600")  # 调整窗口高度
 
-        # 변수 초기화
+        # 初始化变量
         self.mode = tk.StringVar(value="audio_to_p3")
         self.output_dir = tk.StringVar()
         self.output_dir.set(os.path.abspath("output"))
         self.enable_loudnorm = tk.BooleanVar(value=True)
         self.target_lufs = tk.DoubleVar(value=-16.0)
 
-        # UI 구성 요소 생성
+        # 创建UI组件
         self.create_widgets()
         self.redirect_output()
 
     def create_widgets(self):
-        # 모드 선택
-        mode_frame = ttk.LabelFrame(self.master, text="변환 모드")
+        # 模式选择
+        mode_frame = ttk.LabelFrame(self.master, text="转换模式")
         mode_frame.grid(row=0, column=0, padx=10, pady=5, sticky="ew")
         
-        ttk.Radiobutton(mode_frame, text="오디오→P3", variable=self.mode,
+        ttk.Radiobutton(mode_frame, text="音频转P3", variable=self.mode,
                         value="audio_to_p3", command=self.toggle_settings,
                         width=12).grid(row=0, column=0, padx=5)
-        ttk.Radiobutton(mode_frame, text="P3→오디오", variable=self.mode,
+        ttk.Radiobutton(mode_frame, text="P3转音频", variable=self.mode,
                         value="p3_to_audio", command=self.toggle_settings,
                         width=12).grid(row=0, column=1, padx=5)
 
-        # 음량 설정
+        # 响度设置
         self.loudnorm_frame = ttk.Frame(self.master)
         self.loudnorm_frame.grid(row=1, column=0, padx=10, pady=5, sticky="ew")
         
-        ttk.Checkbutton(self.loudnorm_frame, text="음량 조정 활성화", 
+        ttk.Checkbutton(self.loudnorm_frame, text="启用响度调整", 
                        variable=self.enable_loudnorm, width=15
                        ).grid(row=0, column=0, padx=2)
         ttk.Entry(self.loudnorm_frame, textvariable=self.target_lufs, 

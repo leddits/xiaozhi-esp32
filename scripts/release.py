@@ -3,7 +3,7 @@ import os
 import json
 import zipfile
 
-# 프로젝트 루트 디렉토리로 이동
+# 切换到项目根目录
 os.chdir(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 def get_board_type():
@@ -53,10 +53,11 @@ def get_all_board_types():
     board_configs = {}
     with open("main/CMakeLists.txt", encoding='utf-8') as f:
         lines = f.readlines()
-        for i, line in enumerate(lines):            # if(CONFIG_BOARD_TYPE_*) 행 찾기
+        for i, line in enumerate(lines):
+            # 查找 if(CONFIG_BOARD_TYPE_*) 行
             if "if(CONFIG_BOARD_TYPE_" in line:
                 config_name = line.strip().split("if(")[1].split(")")[0]
-                # 다음 행의 set(BOARD_TYPE "xxx") 찾기
+                # 查找下一行的 set(BOARD_TYPE "xxx") 
                 next_line = lines[i + 1].strip()
                 if next_line.startswith("set(BOARD_TYPE"):
                     board_type = next_line.split('"')[1]
@@ -66,7 +67,7 @@ def get_all_board_types():
 def release(board_type, board_config):
     config_path = f"main/boards/{board_type}/config.json"
     if not os.path.exists(config_path):
-        print(f"{board_type} 건너뜀 - config.json이 존재하지 않음")
+        print(f"跳过 {board_type} 因为 config.json 不存在")
         return
 
     # Print Project Version
@@ -80,10 +81,11 @@ def release(board_type, board_config):
     
     for build in builds:
         name = build["name"]
-        if not name.startswith(board_type):            raise ValueError(f"name {name}은(는) {board_type}로 시작해야 합니다")
+        if not name.startswith(board_type):
+            raise ValueError(f"name {name} 必须以 {board_type} 开头")
         output_path = f"releases/v{project_version}_{name}.zip"
         if os.path.exists(output_path):
-            print(f"{board_type} 건너뜀 - {output_path}이(가) 이미 존재")
+            print(f"跳过 {board_type} 因为 {output_path} 已存在")
             continue
 
         sdkconfig_append = [f"{board_config}=y"]
@@ -117,7 +119,8 @@ def release(board_type, board_config):
         print("-" * 80)
 
 if __name__ == "__main__":
-    if len(sys.argv) > 1:        
+    if len(sys.argv) > 1:
+        
         board_configs = get_all_board_types()
         found = False
         for board_config, board_type in board_configs.items():
@@ -125,8 +128,8 @@ if __name__ == "__main__":
                 release(board_type, board_config)
                 found = True
         if not found:
-            print(f"보드 타입을 찾을 수 없음: {sys.argv[1]}")
-            print("사용 가능한 보드 타입:")
+            print(f"未找到板子类型: {sys.argv[1]}")
+            print("可用的板子类型:")
             for board_type in board_configs.values():
                 print(f"  {board_type}")
     else:

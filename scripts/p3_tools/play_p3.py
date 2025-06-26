@@ -1,4 +1,4 @@
-# P3 형식의 오디오 파일 재생
+# 播放p3格式的音频文件
 import opuslib
 import struct
 import numpy as np
@@ -7,18 +7,18 @@ import argparse
 
 def play_p3_file(input_file):
     """
-    P3 형식의 오디오 파일 재생
-    P3 형식: [1바이트 타입, 1바이트 예약, 2바이트 길이, Opus 데이터]
+    播放p3格式的音频文件
+    p3格式: [1字节类型, 1字节保留, 2字节长度, Opus数据]
     """
-    # Opus 디코더 초기화
-    sample_rate = 16000  # 샘플링 레이트는 16000Hz로 고정
-    channels = 1  # 모노
+    # 初始化Opus解码器
+    sample_rate = 16000  # 采样率固定为16000Hz
+    channels = 1  # 单声道
     decoder = opuslib.Decoder(sample_rate, channels)
     
-    # 프레임 크기 (60ms)
+    # 帧大小 (60ms)
     frame_size = int(sample_rate * 60 / 1000)
     
-    # 오디오 스트림 열기
+    # 打开音频流
     stream = sd.OutputStream(
         samplerate=sample_rate,
         channels=channels,
@@ -28,15 +28,15 @@ def play_p3_file(input_file):
     
     try:
         with open(input_file, 'rb') as f:
-            print(f"재생 중: {input_file}")
+            print(f"正在播放: {input_file}")
             
             while True:
-                # 헤더 읽기 (4바이트)
+                # 读取头部 (4字节)
                 header = f.read(4)
                 if not header or len(header) < 4:
                     break
                 
-                # 헤더 파싱
+                # 解析头部
                 packet_type, reserved, data_len = struct.unpack('>BBH', header)
                 
                 # 读取Opus数据
