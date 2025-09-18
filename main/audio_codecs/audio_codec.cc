@@ -43,8 +43,21 @@ void AudioCodec::Start() {
 }
 
 void AudioCodec::SetOutputVolume(int volume) {
+    // 뮤텍스로 동시성 보호 (음성 출력 중 볼륨 변경 시 충돌 방지)
+    std::lock_guard<std::mutex> lock(volume_mutex_);
+    
+    // 볼륨 값 검증
+    if (volume < 0) volume = 0;
+    if (volume > 100) volume = 100;
+    
+    // 이미 같은 볼륨이면 불필요한 하드웨어 호출 방지
+    if (output_volume_ == volume) {
+        ESP_LOGD(TAG, "Volume already set to %d, skipping", volume);
+        return;
+    }
+    
     output_volume_ = volume;
-    ESP_LOGI(TAG, "Set output volume to %d", output_volume_);
+    ESP_LOGI(TAG, "🔊 Set output volume to %d (thread-safe)", output_volume_);
     
     Settings settings("audio", true);
     settings.SetInt("output_volume", output_volume_);

@@ -52,7 +52,25 @@ void McpServer::AddCommonTools() {
         }), 
         [&board](const PropertyList& properties) -> ReturnValue {
             auto codec = board.GetAudioCodec();
-            codec->SetOutputVolume(properties["volume"].value<int>());            
+            int volume = properties["volume"].value<int>();
+            
+            // 볼륨 설정 전 안전성 체크
+            ESP_LOGI("MCP", "🔊 Volume setting request: %d%%", volume);
+            
+            // 하드웨어 안전을 위한 지연 (빠른 연속 호출 방지)
+            static auto last_volume_time = std::chrono::steady_clock::now();
+            auto now = std::chrono::steady_clock::now();
+            auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - last_volume_time);
+            
+            if (elapsed.count() < 200) {  // 200ms 이내 연속 호출 방지
+                ESP_LOGW("MCP", "⚠️ Volume change too frequent, adding delay");
+                vTaskDelay(pdMS_TO_TICKS(200 - elapsed.count()));
+            }
+            
+            codec->SetOutputVolume(volume);
+            last_volume_time = std::chrono::steady_clock::now();
+            
+            ESP_LOGI("MCP", "✅ Volume set successfully to %d%%", volume);
             return true;
         });
     
@@ -348,16 +366,26 @@ void McpServer::DoToolCall(int id, const std::string& tool_name, const cJSON* to
     // Start a task to receive data with stack size
     esp_pthread_cfg_t cfg = esp_pthread_get_default_config();
     cfg.thread_name = "tool_call";
-    cfg.stack_size = stack_size;
-    cfg.prio = 1;
+    
+    // 볼륨 설정 도구의 경우 더 큰 스택 크기 사용
+    if (tool_name == "self.audio_speaker.set_volume") {
+        cfg.stack_size = std::max(stack_size, 8192);  // 최소 8KB 스택
+        ESP_LOGI(TAG, "🔊 Volume tool: increased stack size to %d", cfg.stack_size);
+    } else {
+        cfg.stack_size = stack_size;
+    }
+    
+    cfg.prio = 1;  // 높은 우선순위로 설정
     esp_pthread_set_cfg(&cfg);
 
     // Use a thread to call the tool to avoid blocking the main thread
-    tool_call_thread_ = std::thread([this, id, tool_iter, arguments = std::move(arguments)]() {
+    tool_call_thread_ = std::thread([this, id, tool_iter, arguments = std::move(arguments), tool_name]() {
         try {
+            ESP_LOGI(TAG, "🚀 Executing tool in thread: %s", tool_name.c_str());
             ReplyResult(id, (*tool_iter)->Call(arguments));
+            ESP_LOGI(TAG, "✅ Tool execution completed: %s", tool_name.c_str());
         } catch (const std::runtime_error& e) {
-            ESP_LOGE(TAG, "tools/call: %s", e.what());
+            ESP_LOGE(TAG, "tools/call error in %s: %s", tool_name.c_str(), e.what());
             ReplyError(id, e.what());
         }
     });

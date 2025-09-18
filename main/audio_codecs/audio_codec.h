@@ -8,6 +8,7 @@
 #include <vector>
 #include <string>
 #include <functional>
+#include <mutex>
 
 #include "board.h"
 
@@ -51,6 +52,9 @@ protected:
     int input_channels_ = 1;
     int output_channels_ = 1;
     int output_volume_ = 70;
+    
+    // 볼륨 설정 동시성 보호를 위한 뮤텍스
+    mutable std::mutex volume_mutex_;
 
     virtual int Read(int16_t* dest, int samples) = 0;
     virtual int Write(const int16_t* data, int samples) = 0;
