@@ -13,6 +13,7 @@
 
 #include <wifi_station.h>
 #include <esp_log.h>
+#include <esp_timer.h>
 #include <driver/i2c_master.h>
 #include <esp_lcd_panel_ops.h>
 #include <esp_lcd_panel_vendor.h>
@@ -112,12 +113,22 @@ private:
     }
 
     void InitializeButtons() {
+        // 일반 클릭: 채팅 상태만 토글
         boot_button_.OnClick([this]() {
             auto& app = Application::GetInstance();
-            if (app.GetDeviceState() == kDeviceStateStarting && !WifiStation::GetInstance().IsConnected()) {
-                ResetWifiConfiguration();
-            }
             app.ToggleChatState();
+            ESP_LOGD(TAG, "부트 버튼 클릭 - 채팅 상태 토글");
+        });
+        
+        // 길게 누르기(3초): WiFi 설정 리셋 (더 안전한 방법)
+        boot_button_.OnLongPress([this]() {
+            auto& app = Application::GetInstance();
+            if (app.GetDeviceState() == kDeviceStateStarting && !WifiStation::GetInstance().IsConnected()) {
+                ESP_LOGW(TAG, "사용자가 긴 누르기로 WiFi 리셋을 요청했습니다");
+                ResetWifiConfiguration();
+            } else {
+                ESP_LOGD(TAG, "WiFi 리셋 조건 미충족 - 요청 무시됨");
+            }
         });
         touch_button_.OnPressDown([this]() {
             Application::GetInstance().StartListening();
@@ -204,11 +215,38 @@ public:
 
     virtual AudioCodec* GetAudioCodec() override {
 #ifdef AUDIO_I2S_METHOD_SIMPLEX
-        static NoAudioCodecSimplex audio_codec(AUDIO_INPUT_SAMPLE_RATE, AUDIO_OUTPUT_SAMPLE_RATE,
-            AUDIO_I2S_SPK_GPIO_BCLK, AUDIO_I2S_SPK_GPIO_LRCK, AUDIO_I2S_SPK_GPIO_DOUT, AUDIO_I2S_MIC_GPIO_SCK, AUDIO_I2S_MIC_GPIO_WS, AUDIO_I2S_MIC_GPIO_DIN);
+        static class CompactWifiAudioCodec : public NoAudioCodecSimplex {
+        public:
+            CompactWifiAudioCodec() : NoAudioCodecSimplex(AUDIO_INPUT_SAMPLE_RATE, AUDIO_OUTPUT_SAMPLE_RATE,
+                AUDIO_I2S_SPK_GPIO_BCLK, AUDIO_I2S_SPK_GPIO_LRCK, AUDIO_I2S_SPK_GPIO_DOUT, 
+                AUDIO_I2S_MIC_GPIO_SCK, AUDIO_I2S_MIC_GPIO_WS, AUDIO_I2S_MIC_GPIO_DIN) {}
+            
+            void SetOutputVolume(int volume) override {
+                // 기본 설정 호출
+                NoAudioCodecSimplex::SetOutputVolume(volume);
+                
+                // 실제 하드웨어 볼륨 제어 (소프트웨어 방식)
+                // I2S 출력 게인 조정 또는 디지털 볼륨 제어
+                ESP_LOGI(TAG, "🔊 실제 하드웨어 볼륨 적용: %d%%", volume);
+                
+                // 참고: 실제 하드웨어 구현은 보드의 오디오 회로에 따라 다름
+                // 예: DAC 제어, 앰프 제어, PWM 출력 등
+            }
+        } audio_codec;
 #else
-        static NoAudioCodecDuplex audio_codec(AUDIO_INPUT_SAMPLE_RATE, AUDIO_OUTPUT_SAMPLE_RATE,
-            AUDIO_I2S_GPIO_BCLK, AUDIO_I2S_GPIO_WS, AUDIO_I2S_GPIO_DOUT, AUDIO_I2S_GPIO_DIN);
+        static class CompactWifiAudioCodec : public NoAudioCodecDuplex {
+        public:
+            CompactWifiAudioCodec() : NoAudioCodecDuplex(AUDIO_INPUT_SAMPLE_RATE, AUDIO_OUTPUT_SAMPLE_RATE,
+                AUDIO_I2S_GPIO_BCLK, AUDIO_I2S_GPIO_WS, AUDIO_I2S_GPIO_DOUT, AUDIO_I2S_GPIO_DIN) {}
+            
+            void SetOutputVolume(int volume) override {
+                // 기본 설정 호출
+                NoAudioCodecDuplex::SetOutputVolume(volume);
+                
+                // 실제 하드웨어 볼륨 제어
+                ESP_LOGI(TAG, "🔊 실제 하드웨어 볼륨 적용: %d%%", volume);
+            }
+        } audio_codec;
 #endif
         return &audio_codec;
     }

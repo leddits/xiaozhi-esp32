@@ -52,7 +52,7 @@ void McpServer::AddCommonTools() {
         }), 
         [&board](const PropertyList& properties) -> ReturnValue {
             auto codec = board.GetAudioCodec();
-            codec->SetOutputVolume(properties["volume"].value<int>());
+            codec->SetOutputVolume(properties["volume"].value<int>());            
             return true;
         });
     
