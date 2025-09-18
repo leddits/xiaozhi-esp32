@@ -56,4 +56,7 @@
 // A MCP Test: Control a lamp
 #define LAMP_GPIO GPIO_NUM_18
 
+// Battery monitoring (assuming ADC pin available)
+#define BATTERY_ADC_PIN GPIO_NUM_1  // ADC1_CH0 - 배터리 전압 분배 회로 연결
+
 #endif // _BOARD_CONFIG_H_

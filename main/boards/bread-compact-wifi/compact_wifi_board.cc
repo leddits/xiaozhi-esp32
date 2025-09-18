@@ -16,6 +16,7 @@
 #include <driver/i2c_master.h>
 #include <esp_lcd_panel_ops.h>
 #include <esp_lcd_panel_vendor.h>
+#include <esp_adc/adc_oneshot.h>
 
 #ifdef SH1106
 #include <esp_lcd_panel_sh1106.h>
@@ -36,6 +37,10 @@ private:
     Button touch_button_;
     Button volume_up_button_;
     Button volume_down_button_;
+    
+    // Battery monitoring
+    adc_oneshot_unit_handle_t adc_handle_ = nullptr;
+    uint32_t battery_level_ = 50; // Default battery level
 
     void InitializeDisplayI2c() {
         i2c_master_bus_config_t bus_config = {
@@ -162,6 +167,22 @@ private:
         static LampController lamp(LAMP_GPIO);
 #endif
     }
+    
+    void InitializeBatteryMonitoring() {
+        // Initialize ADC for battery monitoring
+        adc_oneshot_unit_init_cfg_t init_config = {
+            .unit_id = ADC_UNIT_1,
+        };
+        ESP_ERROR_CHECK(adc_oneshot_new_unit(&init_config, &adc_handle_));
+        
+        adc_oneshot_chan_cfg_t config = {
+            .atten = ADC_ATTEN_DB_12,
+            .bitwidth = ADC_BITWIDTH_DEFAULT,
+        };
+        ESP_ERROR_CHECK(adc_oneshot_config_channel(adc_handle_, ADC_CHANNEL_0, &config));
+        
+        ESP_LOGI(TAG, "Battery monitoring initialized on ADC1_CH0");
+    }
 
 public:
     CompactWifiBoard() :
@@ -173,6 +194,7 @@ public:
         InitializeSsd1306Display();
         InitializeButtons();
         InitializeIot();
+        InitializeBatteryMonitoring();
     }
 
     virtual Led* GetLed() override {
@@ -193,6 +215,47 @@ public:
 
     virtual Display* GetDisplay() override {
         return display_;
+    }
+    
+    virtual bool GetBatteryLevel(int& level, bool& charging, bool& discharging) override {
+        if (adc_handle_ == nullptr) {
+            level = 50; // Default fallback
+            charging = false;
+            discharging = true;
+            return true; // Return true to enable battery display
+        }
+        
+        // Read ADC value for battery voltage
+        int adc_value = 0;
+        esp_err_t ret = adc_oneshot_read(adc_handle_, ADC_CHANNEL_0, &adc_value);
+        if (ret != ESP_OK) {
+            level = battery_level_; // Use cached value
+            charging = false;
+            discharging = true;
+            return true;
+        }
+        
+        // Convert ADC value to battery percentage
+        // Assuming 3.7V LiPo battery with voltage divider
+        // ADC reads 0-4095 for 0-3.3V, with voltage divider for 4.2V max
+        // This is a rough estimation - adjust based on your hardware
+        const int adc_min = 2480; // ~2.0V (empty battery)
+        const int adc_full = 4095; // ~3.3V (full battery through divider)
+        
+        if (adc_value >= adc_full) {
+            battery_level_ = 100;
+        } else if (adc_value <= adc_min) {
+            battery_level_ = 0;
+        } else {
+            battery_level_ = ((adc_value - adc_min) * 100) / (adc_full - adc_min);
+        }
+        
+        level = battery_level_;
+        charging = false; // No charging detection in this simple implementation
+        discharging = true; // Assume always discharging when not charging
+        
+        ESP_LOGD(TAG, "Battery ADC: %d, Level: %d%%", adc_value, level);
+        return true; // Return true to enable battery display in API
     }
 };
 
