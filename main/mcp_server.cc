@@ -121,6 +121,82 @@ void McpServer::AddCommonTools() {
             });
     }
 
+    // Add conversation control tools
+    AddTool("self.conversation.end",
+        "Terminate the current conversation and close the audio channel.\n"
+        "Use this tool to: \n"
+        "1. Stop an ongoing conversation remotely\n"
+        "2. Abort current speaking or listening state\n"
+        "3. Close the WebSocket audio connection\n"
+        "This will immediately end any active voice interaction.",
+        PropertyList(),
+        [](const PropertyList& properties) -> ReturnValue {
+            ESP_LOGI(TAG, "🔚 Remote conversation termination requested");
+            
+            auto& app = Application::GetInstance();
+            app.Schedule([&app]() {
+                auto current_state = app.GetDeviceState();
+                ESP_LOGI(TAG, "🔚 Current device state: %d", current_state);
+                
+                // Abort speaking if device is currently speaking
+                if (current_state == kDeviceStateSpeaking) {
+                    ESP_LOGI(TAG, "🔚 Aborting speaking...");
+                    app.AbortSpeaking(kAbortReasonNone);
+                }
+                
+                // Stop listening if device is currently listening
+                if (current_state == kDeviceStateListening) {
+                    ESP_LOGI(TAG, "🔚 Stopping listening...");
+                    app.StopListening();
+                }
+                
+                // Close audio channel if it's open
+                auto protocol = app.GetProtocol();
+                if (protocol && protocol->IsAudioChannelOpened()) {
+                    ESP_LOGI(TAG, "🔚 Closing audio channel...");
+                    protocol->CloseAudioChannel();
+                }
+                
+                ESP_LOGI(TAG, "🔚 Conversation termination completed");
+            });
+            
+            return "{\"success\": true, \"message\": \"Conversation terminated successfully\"}";
+        });
+
+    AddTool("self.conversation.status",
+        "Get the current conversation and device status.\n"
+        "Returns information about:\n"
+        "1. Current device state (idle, listening, speaking, connecting)\n"
+        "2. Audio channel status (open/closed)\n"
+        "3. Connection status\n"
+        "Use this tool to check the device status before terminating a conversation.",
+        PropertyList(),
+        [](const PropertyList& properties) -> ReturnValue {
+            auto& app = Application::GetInstance();
+            auto current_state = app.GetDeviceState();
+            auto protocol = app.GetProtocol();
+            bool audio_channel_open = protocol ? protocol->IsAudioChannelOpened() : false;
+            
+            std::string state_str;
+            switch (current_state) {
+                case kDeviceStateIdle: state_str = "idle"; break;
+                case kDeviceStateListening: state_str = "listening"; break;
+                case kDeviceStateSpeaking: state_str = "speaking"; break;
+                case kDeviceStateConnecting: state_str = "connecting"; break;
+                case kDeviceStateStarting: state_str = "starting"; break;
+                case kDeviceStateActivating: state_str = "activating"; break;
+                default: state_str = "unknown"; break;
+            }
+            
+            std::string result = "{\"success\": true, \"data\": {";
+            result += "\"device_state\": \"" + state_str + "\", ";
+            result += "\"audio_channel_open\": " + std::string(audio_channel_open ? "true" : "false") + ", ";
+            result += "\"protocol_connected\": " + std::string(protocol ? "true" : "false");
+            result += "}}";
+            
+            return result;
+        });
+
     // Restore the original tools list to the end of the tools list
     tools_.insert(tools_.end(), original_tools.begin(), original_tools.end());
 }
