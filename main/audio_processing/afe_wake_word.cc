@@ -35,18 +35,39 @@ void AfeWakeWord::Initialize(AudioCodec* codec) {
     int ref_num = codec_->input_reference() ? 1 : 0;
 
     srmodel_list_t *models = esp_srmodel_init("model");
+    if (models == nullptr) {
+        ESP_LOGE(TAG, "Failed to initialize SR models");
+        return;
+    }
+    
+    ESP_LOGI(TAG, "Found %d wake word models", models->num);
+    
+    if (models->num == 0) {
+        ESP_LOGE(TAG, "No wake word models found in flash. Please ensure wake word models are properly flashed.");
+        return;
+    }
+    
     for (int i = 0; i < models->num; i++) {
         ESP_LOGI(TAG, "Model %d: %s", i, models->model_name[i]);
         if (strstr(models->model_name[i], ESP_WN_PREFIX) != NULL) {
             wakenet_model_ = models->model_name[i];
             auto words = esp_srmodel_get_wake_words(models, wakenet_model_);
+            ESP_LOGI(TAG, "Wake words for model %s: %s", wakenet_model_, words);
             // split by ";" to get all wake words
             std::stringstream ss(words);
             std::string word;
             while (std::getline(ss, word, ';')) {
-                wake_words_.push_back(word);
+                if (!word.empty()) {
+                    wake_words_.push_back(word);
+                    ESP_LOGI(TAG, "Added wake word: %s", word.c_str());
+                }
             }
         }
+    }
+    
+    if (wakenet_model_ == nullptr) {
+        ESP_LOGE(TAG, "No compatible wake word model found (missing ESP_WN_PREFIX)");
+        return;
     }
 
     std::string input_format;
@@ -57,14 +78,31 @@ void AfeWakeWord::Initialize(AudioCodec* codec) {
         input_format.push_back('R');
     }
     afe_config_t* afe_config = afe_config_init(input_format.c_str(), models, AFE_TYPE_SR, AFE_MODE_HIGH_PERF);
+    if (afe_config == nullptr) {
+        ESP_LOGE(TAG, "Failed to create AFE config");
+        return;
+    }
+    
     afe_config->aec_init = codec_->input_reference();
     afe_config->aec_mode = AEC_MODE_SR_HIGH_PERF;
     afe_config->afe_perferred_core = 1;
     afe_config->afe_perferred_priority = 1;
     afe_config->memory_alloc_mode = AFE_MEMORY_ALLOC_MORE_PSRAM;
     
+    ESP_LOGI(TAG, "Creating AFE interface with input format: %s", input_format.c_str());
     afe_iface_ = esp_afe_handle_from_config(afe_config);
+    if (afe_iface_ == nullptr) {
+        ESP_LOGE(TAG, "Failed to create AFE interface");
+        return;
+    }
+    
     afe_data_ = afe_iface_->create_from_config(afe_config);
+    if (afe_data_ == nullptr) {
+        ESP_LOGE(TAG, "Failed to create AFE data");
+        return;
+    }
+    
+    ESP_LOGI(TAG, "AFE Wake Word initialized successfully");
 
     xTaskCreate([](void* arg) {
         auto this_ = (AfeWakeWord*)arg;
@@ -78,6 +116,21 @@ void AfeWakeWord::OnWakeWordDetected(std::function<void(const std::string& wake_
 }
 
 void AfeWakeWord::StartDetection() {
+    if (afe_data_ == nullptr || afe_iface_ == nullptr) {
+        ESP_LOGE(TAG, "Cannot start detection: AFE not properly initialized");
+        return;
+    }
+    
+    if (wake_words_.empty()) {
+        ESP_LOGE(TAG, "Cannot start detection: No wake words configured");
+        return;
+    }
+    
+    ESP_LOGI(TAG, "Starting wake word detection with %d wake words", wake_words_.size());
+    for (const auto& word : wake_words_) {
+        ESP_LOGI(TAG, "  - Wake word: %s", word.c_str());
+    }
+    
     xEventGroupSetBits(event_group_, DETECTION_RUNNING_EVENT);
 }
 

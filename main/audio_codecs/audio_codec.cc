@@ -34,12 +34,17 @@ void AudioCodec::Start() {
         output_volume_ = 10;
     }
 
+    ESP_LOGI(TAG, "Starting audio codec - Sample rates: Input %d Hz, Output %d Hz", 
+             input_sample_rate_, output_sample_rate_);
+    ESP_LOGI(TAG, "Audio channels: Input %d, Output %d", input_channels_, output_channels_);
+    ESP_LOGI(TAG, "Audio volume: %d", output_volume_);
+
     ESP_ERROR_CHECK(i2s_channel_enable(tx_handle_));
     ESP_ERROR_CHECK(i2s_channel_enable(rx_handle_));
 
     EnableInput(true);
     EnableOutput(true);
-    ESP_LOGI(TAG, "Audio codec started");
+    ESP_LOGI(TAG, "Audio codec started successfully");
 }
 
 void AudioCodec::SetOutputVolume(int volume) {

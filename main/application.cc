@@ -669,7 +669,6 @@ void Application::Start() {
             }
         });
     });
-    wake_word_->StartDetection();
 
     // Wait for the new version check to finish
     xEventGroupWaitBits(event_group_, CHECK_NEW_VERSION_DONE_EVENT, pdTRUE, pdFALSE, portMAX_DELAY);
@@ -682,7 +681,14 @@ void Application::Start() {
         // Play the success sound to indicate the device is ready
         ResetDecoder();
         PlaySound(Lang::Sounds::P3_SUCCESS);
+        
+        // Wait for the success sound to finish before starting wake word detection
+        // This prevents audio conflicts between system sounds and wake word detection
+        vTaskDelay(pdMS_TO_TICKS(2000)); // Wait 2 seconds for sound to complete
     }
+    
+    // Start wake word detection after system sounds are finished
+    wake_word_->StartDetection();
 
     // Print heap stats
     SystemInfo::PrintHeapStats();

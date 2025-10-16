@@ -28,19 +28,37 @@ void EspWakeWord::Initialize(AudioCodec* codec) {
 
     wakenet_model_ = esp_srmodel_init("model");
 
+    if(wakenet_model_ == nullptr) {
+        ESP_LOGE(TAG, "Failed to initialize SR model");
+        return;
+    }
+
     if(wakenet_model_->num > 1) {
         ESP_LOGW(TAG, "More than one model found, using the first one");
     } else if (wakenet_model_->num == 0) {
-        ESP_LOGE(TAG, "No model found");
+        ESP_LOGE(TAG, "No wake word model found in flash. Please ensure wake word models are properly flashed.");
         return;
     }
+    
     char *model_name = wakenet_model_->model_name[0];
+    ESP_LOGI(TAG, "Initializing wake word model: %s", model_name);
+    
     wakenet_iface_ = (esp_wn_iface_t*)esp_wn_handle_from_name(model_name);
+    if (wakenet_iface_ == nullptr) {
+        ESP_LOGE(TAG, "Failed to get wake word interface for model: %s", model_name);
+        return;
+    }
+    
     wakenet_data_ = wakenet_iface_->create(model_name, DET_MODE_95);
+    if (wakenet_data_ == nullptr) {
+        ESP_LOGE(TAG, "Failed to create wake word data for model: %s", model_name);
+        return;
+    }
 
     int frequency = wakenet_iface_->get_samp_rate(wakenet_data_);
     int audio_chunksize = wakenet_iface_->get_samp_chunksize(wakenet_data_);
-    ESP_LOGI(TAG, "Wake word(%s),freq: %d, chunksize: %d", model_name, frequency, audio_chunksize);
+    ESP_LOGI(TAG, "Wake word initialized successfully - Model: %s, Freq: %d Hz, Chunk size: %d", 
+             model_name, frequency, audio_chunksize);
 }
 
 void EspWakeWord::OnWakeWordDetected(std::function<void(const std::string& wake_word)> callback) {
@@ -48,6 +66,12 @@ void EspWakeWord::OnWakeWordDetected(std::function<void(const std::string& wake_
 }
 
 void EspWakeWord::StartDetection() {
+    if (wakenet_data_ == nullptr || wakenet_iface_ == nullptr) {
+        ESP_LOGE(TAG, "Cannot start detection: Wake word not properly initialized");
+        return;
+    }
+    
+    ESP_LOGI(TAG, "Starting ESP wake word detection");
     xEventGroupSetBits(event_group_, DETECTION_RUNNING_EVENT);
 }
 
