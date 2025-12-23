@@ -51,7 +51,7 @@ protected:
     int output_sample_rate_ = 0;
     int input_channels_ = 1;
     int output_channels_ = 1;
-    int output_volume_ = 70;
+    int output_volume_ = 100;
     
     // 볼륨 설정 동시성 보호를 위한 뮤텍스
     mutable std::mutex volume_mutex_;

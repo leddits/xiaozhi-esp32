@@ -27,12 +27,15 @@ bool AudioCodec::InputData(std::vector<int16_t>& data) {
 }
 
 void AudioCodec::Start() {
-    Settings settings("audio", false);
-    output_volume_ = settings.GetInt("output_volume", output_volume_);
-    if (output_volume_ <= 0) {
-        ESP_LOGW(TAG, "Output volume value (%d) is too small, setting to default (10)", output_volume_);
-        output_volume_ = 10;
-    }
+    // Settings settings("audio", false);
+    // output_volume_ = settings.GetInt("output_volume", output_volume_);
+    // if (output_volume_ <= 0) {
+    //     ESP_LOGW(TAG, "Output volume value (%d) is too small, setting to default (100)", output_volume_);
+    //     output_volume_ = 100;
+    // }
+
+    // 오디오 볼륨 최대로 설정
+    output_volume_ = 100;
 
     ESP_LOGI(TAG, "Starting audio codec - Sample rates: Input %d Hz, Output %d Hz", 
              input_sample_rate_, output_sample_rate_);
