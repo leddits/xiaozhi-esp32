@@ -45,7 +45,8 @@ ReturnValue PressToTalkMcpTool::HandleSetPressToTalk(const PropertyList& propert
         return true;
     }
     
-    throw std::runtime_error("Invalid mode: " + mode);
+    ESP_LOGE(TAG, "Invalid mode: %s", mode.c_str());
+    return std::string("Error: Invalid mode: " + mode);
 }
 
 void PressToTalkMcpTool::SetPressToTalkEnabled(bool enabled) {

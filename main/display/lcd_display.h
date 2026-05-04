@@ -56,6 +56,7 @@ public:
     
     // Set whether to hide chat messages/subtitles
     void SetHideSubtitle(bool hide);
+    virtual bool IsLcdDisplay() const override { return true; }
 };
 
 // SPI LCD display

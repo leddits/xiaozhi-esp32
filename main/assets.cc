@@ -345,7 +345,7 @@ bool Assets::LvglStrategy::Apply(Assets* assets, bool refresh_display_theme) {
         cJSON* hide_subtitle = cJSON_GetObjectItem(root, "hide_subtitle");
         if (cJSON_IsBool(hide_subtitle)) {
             bool hide = cJSON_IsTrue(hide_subtitle);
-            auto lcd_display = dynamic_cast<LcdDisplay*>(display);
+            auto lcd_display = (display && display->IsLcdDisplay()) ? static_cast<LcdDisplay*>(display) : nullptr;
             if (lcd_display != nullptr) {
                 lcd_display->SetHideSubtitle(hide);
                 ESP_LOGI(TAG, "Set hide_subtitle to %s", hide ? "true" : "false");
@@ -367,7 +367,7 @@ bool Assets::EmoteStrategy::InitializePartition(Assets* assets) {
 
     esp_err_t ret = ESP_ERR_INVALID_STATE;
     auto display = Board::GetInstance().GetDisplay();
-    auto* emote_display = dynamic_cast<emote::EmoteDisplay*>(display);
+    auto* emote_display = (display && display->IsEmoteDisplay()) ? static_cast<emote::EmoteDisplay*>(display) : nullptr;
     if (emote_display && emote_display->GetEmoteHandle() != nullptr) {
         const emote_data_t data = {
             .type = EMOTE_SOURCE_PARTITION,
@@ -388,7 +388,7 @@ bool Assets::EmoteStrategy::InitializePartition(Assets* assets) {
 
 void Assets::EmoteStrategy::UnApplyPartition(Assets* assets) {
     auto display = Board::GetInstance().GetDisplay();
-    auto* emote_display = dynamic_cast<emote::EmoteDisplay*>(display);
+    auto* emote_display = (display && display->IsEmoteDisplay()) ? static_cast<emote::EmoteDisplay*>(display) : nullptr;
     if (emote_display && emote_display->GetEmoteHandle() != nullptr) {
         emote_unmount_assets(emote_display->GetEmoteHandle());
     }
@@ -397,7 +397,7 @@ void Assets::EmoteStrategy::UnApplyPartition(Assets* assets) {
 
 bool Assets::EmoteStrategy::GetAssetData(Assets* assets, const std::string& name, void*& ptr, size_t& size) {
     auto display = Board::GetInstance().GetDisplay();
-    auto* emote_display = dynamic_cast<emote::EmoteDisplay*>(display);
+    auto* emote_display = (display && display->IsEmoteDisplay()) ? static_cast<emote::EmoteDisplay*>(display) : nullptr;
     if (emote_display && emote_display->GetEmoteHandle() != nullptr) {
         const uint8_t* data = nullptr;
         size_t data_size = 0;
@@ -417,7 +417,7 @@ bool Assets::EmoteStrategy::Apply(Assets* assets, bool refresh_display_theme) {
     Assets::LoadSrmodelsFromIndex(assets);
 
     auto display = Board::GetInstance().GetDisplay();
-    auto* emote_display = dynamic_cast<emote::EmoteDisplay*>(display);
+    auto* emote_display = (display && display->IsEmoteDisplay()) ? static_cast<emote::EmoteDisplay*>(display) : nullptr;
 
     if (emote_display && emote_display->GetEmoteHandle() != nullptr) {
         emote_load_assets(emote_display->GetEmoteHandle());

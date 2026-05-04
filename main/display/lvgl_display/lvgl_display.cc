@@ -253,6 +253,7 @@ bool LvglDisplay::SnapshotToJpeg(std::string& jpeg_data, int quality) {
     jpeg_data.clear();
 
     // Use callback-based JPEG encoder to further save memory
+#ifndef CONFIG_IDF_TARGET_ESP32
     bool ret = image_to_jpeg_cb((uint8_t*)draw_buffer->data, draw_buffer->data_size, draw_buffer->header.w, draw_buffer->header.h, V4L2_PIX_FMT_RGB565, quality,
         [](void *arg, size_t index, const void *data, size_t len) -> size_t {
         std::string* output = static_cast<std::string*>(arg);
@@ -264,6 +265,10 @@ bool LvglDisplay::SnapshotToJpeg(std::string& jpeg_data, int quality) {
     if (!ret) {
         ESP_LOGE(TAG, "Failed to convert image to JPEG");
     }
+#else
+    bool ret = false;
+    ESP_LOGE(TAG, "image_to_jpeg not supported on ESP32");
+#endif
 
     lv_draw_buf_destroy(draw_buffer);
     return ret;

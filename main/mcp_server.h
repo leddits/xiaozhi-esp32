@@ -9,6 +9,7 @@
 #include <optional>
 #include <stdexcept>
 #include <thread>
+#include <esp_log.h>
 #include <mbedtls/base64.h>
 
 #include <cJSON.h>
@@ -79,17 +80,20 @@ public:
     Property(const std::string& name, PropertyType type, int min_value, int max_value)
         : name_(name), type_(type), has_default_value_(false), min_value_(min_value), max_value_(max_value) {
         if (type != kPropertyTypeInteger) {
-            throw std::invalid_argument("Range limits only apply to integer properties");
+            ESP_LOGE("MCP", "Range limits only apply to integer properties");
+            abort();
         }
     }
 
     Property(const std::string& name, PropertyType type, int default_value, int min_value, int max_value)
         : name_(name), type_(type), has_default_value_(true), min_value_(min_value), max_value_(max_value) {
         if (type != kPropertyTypeInteger) {
-            throw std::invalid_argument("Range limits only apply to integer properties");
+            ESP_LOGE("MCP", "Range limits only apply to integer properties");
+            abort();
         }
         if (default_value < min_value || default_value > max_value) {
-            throw std::invalid_argument("Default value must be within the specified range");
+            ESP_LOGE("MCP", "Default value must be within the specified range");
+            abort();
         }
         value_ = default_value;
     }
@@ -111,10 +115,12 @@ public:
         // 添加对设置的整数值进行范围检查
         if constexpr (std::is_same_v<T, int>) {
             if (min_value_.has_value() && value < min_value_.value()) {
-                throw std::invalid_argument("Value is below minimum allowed: " + std::to_string(min_value_.value()));
+                ESP_LOGW("MCP", "Value is below minimum allowed: %d", min_value_.value());
+                return;
             }
             if (max_value_.has_value() && value > max_value_.value()) {
-                throw std::invalid_argument("Value exceeds maximum allowed: " + std::to_string(max_value_.value()));
+                ESP_LOGW("MCP", "Value exceeds maximum allowed: %d", max_value_.value());
+                return;
             }
         }
         value_ = value;
@@ -172,7 +178,8 @@ public:
                 return property;
             }
         }
-        throw std::runtime_error("Property not found: " + name);
+        ESP_LOGE("MCP", "Property not found: %s", name.c_str());
+        abort();
     }
 
     auto begin() { return properties_.begin(); }

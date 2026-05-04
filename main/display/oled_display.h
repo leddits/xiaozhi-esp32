@@ -36,6 +36,7 @@ public:
     virtual void SetChatMessage(const char* role, const char* content) override;
     virtual void SetEmotion(const char* emotion) override;
     virtual void SetTheme(Theme* theme) override;
+    virtual bool IsOledDisplay() const override { return true; }
 };
 
 #endif // OLED_DISPLAY_H

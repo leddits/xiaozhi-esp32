@@ -2,7 +2,6 @@
 #include <cbin_font.h>
 
 #include <esp_log.h>
-#include <stdexcept>
 #include <cstring>
 #include <esp_heap_caps.h>
 
@@ -41,7 +40,7 @@ LvglAllocatedImage::LvglAllocatedImage(void* data, size_t size) {
 
     if (lv_image_decoder_get_info(&image_dsc_, &image_dsc_.header) != LV_RESULT_OK) {
         ESP_LOGE(TAG, "Failed to get image info, data: %p size: %u", data, size);
-        throw std::runtime_error("Failed to get image info");
+        abort();
     }
 }
 

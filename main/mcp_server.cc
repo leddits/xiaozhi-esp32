@@ -113,7 +113,7 @@ void McpServer::AddCommonTools() {
                 TaskPriorityReset priority_reset(1);
 
                 if (!camera->Capture()) {
-                    throw std::runtime_error("Failed to capture photo");
+                    return std::string("Error: Failed to capture photo");
                 }
                 auto question = properties["question"].value<std::string>();
                 return camera->Explain(question);
@@ -170,7 +170,8 @@ void McpServer::AddUserOnlyTools() {
 
     // Display control
 #ifdef HAVE_LVGL
-    auto display = dynamic_cast<LvglDisplay*>(Board::GetInstance().GetDisplay());
+    auto* lvgl_base = Board::GetInstance().GetDisplay();
+    auto display = (lvgl_base && lvgl_base->IsLvglDisplay()) ? static_cast<LvglDisplay*>(lvgl_base) : nullptr;
     if (display) {
         AddUserOnlyTool("self.screen.get_info", "Information about the screen, including width, height, etc.",
             PropertyList(),
@@ -178,7 +179,7 @@ void McpServer::AddUserOnlyTools() {
                 cJSON *json = cJSON_CreateObject();
                 cJSON_AddNumberToObject(json, "width", display->width());
                 cJSON_AddNumberToObject(json, "height", display->height());
-                if (dynamic_cast<OledDisplay*>(display)) {
+                if (display->IsOledDisplay()) {
                     cJSON_AddBoolToObject(json, "monochrome", true);
                 } else {
                     cJSON_AddBoolToObject(json, "monochrome", false);
@@ -198,7 +199,7 @@ void McpServer::AddUserOnlyTools() {
 
                 std::string jpeg_data;
                 if (!display->SnapshotToJpeg(jpeg_data, quality)) {
-                    throw std::runtime_error("Failed to snapshot screen");
+                    return std::string("Error: Failed to snapshot screen");
                 }
 
                 ESP_LOGI(TAG, "Upload snapshot %u bytes to %s", jpeg_data.size(), url.c_str());
@@ -209,7 +210,7 @@ void McpServer::AddUserOnlyTools() {
                 auto http = Board::GetInstance().GetNetwork()->CreateHttp(3);
                 http->SetHeader("Content-Type", "multipart/form-data; boundary=" + boundary);
                 if (!http->Open("POST", url)) {
-                    throw std::runtime_error("Failed to open URL: " + url);
+                    return std::string("Error: Failed to open URL: " + url);
                 }
                 {
                     // 文件字段头部
@@ -233,7 +234,9 @@ void McpServer::AddUserOnlyTools() {
                 http->Write("", 0);
 
                 if (http->GetStatusCode() != 200) {
-                    throw std::runtime_error("Unexpected status code: " + std::to_string(http->GetStatusCode()));
+                    int sc = http->GetStatusCode();
+                    http->Close();
+                    return std::string("Error: Unexpected status code: " + std::to_string(sc));
                 }
                 std::string result = http->ReadAll();
                 http->Close();
@@ -250,24 +253,27 @@ void McpServer::AddUserOnlyTools() {
                 auto http = Board::GetInstance().GetNetwork()->CreateHttp(3);
 
                 if (!http->Open("GET", url)) {
-                    throw std::runtime_error("Failed to open URL: " + url);
+                    return std::string("Error: Failed to open URL: " + url);
                 }
                 int status_code = http->GetStatusCode();
                 if (status_code != 200) {
-                    throw std::runtime_error("Unexpected status code: " + std::to_string(status_code));
+                    http->Close();
+                    return std::string("Error: Unexpected status code: " + std::to_string(status_code));
                 }
 
                 size_t content_length = http->GetBodyLength();
                 char* data = (char*)heap_caps_malloc(content_length, MALLOC_CAP_8BIT);
                 if (data == nullptr) {
-                    throw std::runtime_error("Failed to allocate memory for image: " + url);
+                    http->Close();
+                    return std::string("Error: Failed to allocate memory for image: " + url);
                 }
                 size_t total_read = 0;
                 while (total_read < content_length) {
                     int ret = http->Read(data + total_read, content_length - total_read);
                     if (ret < 0) {
                         heap_caps_free(data);
-                        throw std::runtime_error("Failed to download image: " + url);
+                        http->Close();
+                        return std::string("Error: Failed to download image: " + url);
                     }
                     if (ret == 0) {
                         break;
@@ -518,8 +524,7 @@ void McpServer::DoToolCall(int id, const std::string& tool_name, const cJSON* to
     }
 
     PropertyList arguments = (*tool_iter)->properties();
-    try {
-        for (auto& argument : arguments) {
+    for (auto& argument : arguments) {
             bool found = false;
             if (cJSON_IsObject(tool_arguments)) {
                 auto value = cJSON_GetObjectItem(tool_arguments, argument.name().c_str());
@@ -541,20 +546,10 @@ void McpServer::DoToolCall(int id, const std::string& tool_name, const cJSON* to
                 return;
             }
         }
-    } catch (const std::exception& e) {
-        ESP_LOGE(TAG, "tools/call: %s", e.what());
-        ReplyError(id, e.what());
-        return;
-    }
 
     // Use main thread to call the tool
     auto& app = Application::GetInstance();
     app.Schedule([this, id, tool_iter, arguments = std::move(arguments)]() {
-        try {
-            ReplyResult(id, (*tool_iter)->Call(arguments));
-        } catch (const std::exception& e) {
-            ESP_LOGE(TAG, "tools/call: %s", e.what());
-            ReplyError(id, e.what());
-        }
+        ReplyResult(id, (*tool_iter)->Call(arguments));
     });
 }

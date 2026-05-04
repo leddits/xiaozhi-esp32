@@ -31,6 +31,8 @@ public:
     // Get emote handle for internal use
     emote_handle_t GetEmoteHandle() const { return emote_handle_; }
 
+    virtual bool IsEmoteDisplay() const override { return true; }
+
 private:
     virtual bool Lock(int timeout_ms = 0) override;
     virtual void Unlock() override;

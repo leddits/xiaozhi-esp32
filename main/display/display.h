@@ -44,6 +44,11 @@ public:
         setup_ui_called_ = true;
     }
 
+    virtual bool IsLvglDisplay() const { return false; }
+    virtual bool IsOledDisplay() const { return false; }
+    virtual bool IsEmoteDisplay() const { return false; }
+    virtual bool IsLcdDisplay() const { return false; }
+
     inline int width() const { return width_; }
     inline int height() const { return height_; }
     inline bool IsSetupUICalled() const { return setup_ui_called_; }

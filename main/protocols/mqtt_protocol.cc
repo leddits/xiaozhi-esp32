@@ -180,7 +180,7 @@ bool MqttProtocol::SendAudio(std::unique_ptr<AudioStreamPacket> packet) {
 
     size_t nc_off = 0;
     uint8_t stream_block[16] = {0};
-    if (mbedtls_aes_crypt_ctr(&aes_ctx_, packet->payload.size(), &nc_off, (uint8_t*)nonce.c_str(), stream_block,
+    if (esp_aes_crypt_ctr(&aes_ctx_, packet->payload.size(), &nc_off, (uint8_t*)nonce.c_str(), stream_block,
         (uint8_t*)packet->payload.data(), (uint8_t*)&encrypted[nonce.size()]) != 0) {
         ESP_LOGE(TAG, "Failed to encrypt audio data");
         return false;
@@ -229,7 +229,7 @@ bool MqttProtocol::OpenAudioChannel() {
         return false;
     }
 
-    // 等待服务器响应
+    // 等待?�务?�响�?
     EventBits_t bits = xEventGroupWaitBits(event_group_handle_, MQTT_PROTOCOL_SERVER_HELLO_EVENT, pdTRUE, pdFALSE, pdMS_TO_TICKS(10000));
     if (!(bits & MQTT_PROTOCOL_SERVER_HELLO_EVENT)) {
         ESP_LOGE(TAG, "Failed to receive server hello");
@@ -274,7 +274,7 @@ bool MqttProtocol::OpenAudioChannel() {
         packet->frame_duration = server_frame_duration_;
         packet->timestamp = timestamp;
         packet->payload.resize(decrypted_size);
-        int ret = mbedtls_aes_crypt_ctr(&aes_ctx_, decrypted_size, &nc_off, nonce, stream_block, encrypted, (uint8_t*)packet->payload.data());
+        int ret = esp_aes_crypt_ctr(&aes_ctx_, decrypted_size, &nc_off, nonce, stream_block, encrypted, (uint8_t*)packet->payload.data());
         if (ret != 0) {
             ESP_LOGE(TAG, "Failed to decrypt audio data, ret: %d", ret);
             return;
@@ -295,7 +295,7 @@ bool MqttProtocol::OpenAudioChannel() {
 }
 
 std::string MqttProtocol::GetHelloMessage() {
-    // 发送 hello 消息申请 UDP 通道
+    // ?��?hello 消息?��? UDP ?�道
     cJSON* root = cJSON_CreateObject();
     cJSON_AddStringToObject(root, "type", "hello");
     cJSON_AddNumberToObject(root, "version", 3);
@@ -358,20 +358,20 @@ void MqttProtocol::ParseServerHello(const cJSON* root) {
     // auto encryption = cJSON_GetObjectItem(udp, "encryption")->valuestring;
     // ESP_LOGI(TAG, "UDP server: %s, port: %d, encryption: %s", udp_server_.c_str(), udp_port_, encryption);
     aes_nonce_ = DecodeHexString(nonce);
-    mbedtls_aes_init(&aes_ctx_);
-    mbedtls_aes_setkey_enc(&aes_ctx_, (const unsigned char*)DecodeHexString(key).c_str(), 128);
+    esp_aes_init(&aes_ctx_);
+    esp_aes_setkey(&aes_ctx_, (const unsigned char*)DecodeHexString(key).c_str(), 128);
     local_sequence_ = 0;
     remote_sequence_ = 0;
     xEventGroupSetBits(event_group_handle_, MQTT_PROTOCOL_SERVER_HELLO_EVENT);
 }
 
 static const char hex_chars[] = "0123456789ABCDEF";
-// 辅助函数，将单个十六进制字符转换为对应的数值
+// 辅助?�数，将?�个?�六进制字符转换为�?应的?��?
 static inline uint8_t CharToHex(char c) {
     if (c >= '0' && c <= '9') return c - '0';
     if (c >= 'A' && c <= 'F') return c - 'A' + 10;
     if (c >= 'a' && c <= 'f') return c - 'a' + 10;
-    return 0;  // 对于无效输入，返回0
+    return 0;  // 对于?�效输入，返??
 }
 
 std::string MqttProtocol::DecodeHexString(const std::string& hex_string) {
