@@ -32,7 +32,7 @@ WifiConfigurationAp& WifiConfigurationAp::GetInstance() {
 WifiConfigurationAp::WifiConfigurationAp()
 {
     event_group_ = xEventGroupCreate();
-    language_ = "ko-KR";
+    language_ = "en-US";
     sleep_mode_ = false;
 }
 

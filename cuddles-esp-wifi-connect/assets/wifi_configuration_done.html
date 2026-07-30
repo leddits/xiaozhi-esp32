@@ -95,10 +95,10 @@
         window.addEventListener('load', function() {
             // URL에서 lang 파라미터 읽기
             const urlParams = new URLSearchParams(window.location.search);
-            const lang = urlParams.get('lang') || 'ko-KR';
+            const lang = urlParams.get('lang') || 'en-US';
             
-            // 메시지 선택 (없으면 한국어)
-            const message = messages[lang] || messages['ko-KR'];
+            // 메시지 선택 (없으면 영어)
+            const message = messages[lang] || messages['en-US'];
             
             // 메시지 업데이트
             const messageDiv = document.querySelector('.message');

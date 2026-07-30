@@ -191,7 +191,7 @@
             <option value="da-DK">Dansk</option>
             <option value="de-DE">Deutsch</option>
             <option value="el-GR">Ελληνικά</option>
-            <option value="en-US">English</option>
+            <option value="en-US" selected>English</option>
             <option value="es-ES">Español</option>
             <option value="fa-IR">فارسی</option>
             <option value="fi-FI">Suomi</option>
@@ -204,7 +204,7 @@
             <option value="id-ID">Bahasa Indonesia</option>
             <option value="it-IT">Italiano</option>
             <option value="ja-JP">日本語</option>
-            <option value="ko-KR" selected>한국어</option>
+            <option value="ko-KR">한국어</option>
             <option value="ms-MY">Bahasa Melayu</option>
             <option value="nb-NO">Norsk</option>
             <option value="nl-NL">Nederlands</option>
@@ -1108,8 +1108,8 @@
             if (languageMap[mainLang]) {
                 return languageMap[mainLang];
             }
-            // If no match, return Korean
-            return 'ko-KR';
+            // If no match, return English
+            return 'en-US';
         }
 
         /**
@@ -1120,8 +1120,8 @@
             
             // Check if language is valid
             if (!translations[lang]) {
-                console.warn(`Unsupported language: ${lang}, defaulting to Korean`);
-                document.getElementById('language').value = 'ko-KR';
+                console.warn(`Unsupported language: ${lang}, defaulting to English`);
+                document.getElementById('language').value = 'en-US';
                 return changeLanguage();
             }
             
@@ -1438,10 +1438,10 @@
             const urlParams = new URLSearchParams(window.location.search);
             const langParam = urlParams.get('lang');
             
-            // Priority: URL parameter > local storage > hardcoded default (Korean)
+            // Priority: URL parameter > local storage > hardcoded default (English)
             const savedLang = langParam || 
                              localStorage.getItem('preferred_language') || 
-                             'ko-KR';
+                             'en-US';
             
             document.getElementById('language').value = savedLang;
             changeLanguage();
